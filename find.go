@@ -16,35 +16,8 @@ type TestCase struct {
 	FuncCalls []*ast.CallExpr
 }
 
-func findAllCalls(pkg *ast.Package) []TestCase {
-	all := []TestCase{}
-	for filename, file := range pkg.Files {
-		if !strings.HasSuffix(filename, "_test.go") {
-			continue
-		}
-
-		for _, obj := range file.Scope.Objects {
-			if !isTestFunc(obj) {
-				continue
-			}
-
-			testcase := TestCase{Filename: filename, Testname: obj.Name}
-			for _, stmt := range obj.Decl.(*ast.FuncDecl).Body.List {
-				visitor := &astVisitor{}
-				ast.Walk(visitor, stmt)
-				testcase.FuncCalls = append(testcase.FuncCalls, visitor.calls...)
-			}
-
-			all = append(all, testcase)
-		}
-	}
-	return all
-}
-
-func isTestFunc(obj *ast.Object) bool {
-	return strings.HasPrefix(obj.Name, "Test") && obj.Kind == ast.Fun
-}
-
+// TestCasesFromDir returns a list of TestCases found in the test files in
+// a directory
 func TestCasesFromDir(path string) ([]TestCase, error) {
 	fset := token.NewFileSet()
 	packages, err := parser.ParseDir(fset, path, nil, parser.DeclarationErrors)
@@ -60,6 +33,39 @@ func TestCasesFromDir(path string) ([]TestCase, error) {
 		all = append(all, findAllCalls(pkg)...)
 	}
 	return all, nil
+}
+
+func findAllCalls(pkg *ast.Package) []TestCase {
+	testcases := []TestCase{}
+	for filename, file := range pkg.Files {
+		if !strings.HasSuffix(filename, "_test.go") {
+			continue
+		}
+
+		for _, obj := range file.Scope.Objects {
+			if !isTestFunc(obj) {
+				continue
+			}
+
+			testcase := TestCase{Filename: filename, Testname: obj.Name}
+			for _, stmt := range obj.Decl.(*ast.FuncDecl).Body.List {
+				calls := funcCallsFromTestCase(stmt)
+				testcase.FuncCalls = append(testcase.FuncCalls, calls...)
+			}
+			testcases = append(testcases, testcase)
+		}
+	}
+	return testcases
+}
+
+func isTestFunc(obj *ast.Object) bool {
+	return strings.HasPrefix(obj.Name, "Test") && obj.Kind == ast.Fun
+}
+
+func funcCallsFromTestCase(stmt ast.Node) []*ast.CallExpr {
+	visitor := &astVisitor{}
+	ast.Walk(visitor, stmt)
+	return visitor.calls
 }
 
 type astVisitor struct {
