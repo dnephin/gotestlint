@@ -1,6 +1,7 @@
 package gotestlint
 
 import (
+	"fmt"
 	"go/ast"
 	"go/parser"
 	"go/token"
@@ -13,7 +14,26 @@ import (
 type TestCase struct {
 	Filename  string
 	Testname  string
-	FuncCalls []*ast.CallExpr
+	FuncCalls []FuncCall
+}
+
+// FuncCall stores data about a function call
+type FuncCall struct {
+	Receiver string
+	Name     string
+}
+
+func (fc FuncCall) String() string {
+	if fc.Receiver == "" {
+		return fc.Name
+	}
+	return fmt.Sprintf("%s.%s", fc.Receiver, fc.Name)
+}
+
+// ExpectedTestPrefix returns the expected prefix for a test case that tests the
+// function
+func (fc FuncCall) ExpectedTestPrefix() string {
+	return fmt.Sprintf("Test%s%s", strings.Title(fc.Receiver), strings.Title(fc.Name))
 }
 
 // TestCasesFromDir returns a list of TestCases found in the test files in
@@ -38,7 +58,7 @@ func TestCasesFromDir(path string) ([]TestCase, error) {
 func findAllCalls(pkg *ast.Package) []TestCase {
 	testcases := []TestCase{}
 	for filename, file := range pkg.Files {
-		if !strings.HasSuffix(filename, "_test.go") {
+		if !isTestFile(filename) {
 			continue
 		}
 
@@ -58,25 +78,29 @@ func findAllCalls(pkg *ast.Package) []TestCase {
 	return testcases
 }
 
+func isTestFile(filename string) bool {
+	return strings.HasSuffix(filename, "_test.go")
+}
+
 func isTestFunc(obj *ast.Object) bool {
 	return strings.HasPrefix(obj.Name, "Test") && obj.Kind == ast.Fun
 }
 
-func funcCallsFromTestCase(stmt ast.Node) []*ast.CallExpr {
+func funcCallsFromTestCase(stmt ast.Node) []FuncCall {
 	visitor := &astVisitor{}
 	ast.Walk(visitor, stmt)
 	return visitor.calls
 }
 
 type astVisitor struct {
-	calls []*ast.CallExpr
+	calls []FuncCall
 }
 
 func (v *astVisitor) Visit(node ast.Node) ast.Visitor {
 	switch typed := node.(type) {
 	case *ast.CallExpr:
 		if isCallWithoutSelector(typed.Fun) {
-			v.appendCall(typed)
+			v.appendCall(typed.Fun.(*ast.Ident).Name, "")
 		}
 		// TODO: also find calls with selectors where the selector is the
 		// struct that is being tested
@@ -89,6 +113,6 @@ func isCallWithoutSelector(expr ast.Expr) bool {
 	return ok
 }
 
-func (v *astVisitor) appendCall(expr *ast.CallExpr) {
-	v.calls = append(v.calls, expr)
+func (v *astVisitor) appendCall(name, receiver string) {
+	v.calls = append(v.calls, FuncCall{Name: name, Receiver: receiver})
 }

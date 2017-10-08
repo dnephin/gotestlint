@@ -1,7 +1,6 @@
 package gotestlint
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/gotestyourself/gotestyourself/fs"
@@ -15,10 +14,13 @@ func TestFindAllCalls(t *testing.T) {
 
 	testCases, err := TestCasesFromDir(dir.Path())
 	require.NoError(t, err)
-	assert.Len(t, testCases, 1)
-	testCase := testCases[0]
-	assert.Equal(t, dir.Join("find_test.go"), testCase.Filename)
-	assert.Equal(t, "TestSampleCaseCallsFunctionInCorrectFile", testCase.Testname)
-	assert.Len(t, testCase.FuncCalls, 1)
-	assert.Equal(t, "Sample", fmt.Sprintf("%s", testCase.FuncCalls[0].Fun))
+
+	expected := []TestCase{
+		{
+			Filename:  dir.Join("find_test.go"),
+			Testname:  "TestSampleCaseCallsFunctionInCorrectFile",
+			FuncCalls: []FuncCall{{Name: "Sample"}},
+		},
+	}
+	assert.Equal(t, expected, testCases)
 }
