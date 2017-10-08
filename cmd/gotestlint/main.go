@@ -32,13 +32,12 @@ func parseOptions() (options, error) {
 }
 
 func run(opts options) error {
-	calls, err := gotestlint.ParseDirectory(opts.path)
+	directory, err := gotestlint.ParseDirectory(opts.path)
 	if err != nil {
 		return err
 	}
 
-	grouped := groupByFilename(calls)
-	for filename, calls := range grouped {
+	for filename, calls := range directory.TestCases {
 		fmt.Printf("File: %s\n", filename)
 		for _, call := range calls {
 			fmt.Print(formatCalls(call))
@@ -47,19 +46,11 @@ func run(opts options) error {
 	return nil
 }
 
-func groupByFilename(calls []gotestlint.TestCase) map[string][]gotestlint.TestCase {
-	out := make(map[string][]gotestlint.TestCase)
-	for _, call := range calls {
-		out[call.Filename] = append(out[call.Filename], call)
-	}
-	return out
-}
-
 func formatCalls(testcalls gotestlint.TestCase) string {
 	buf := new(bytes.Buffer)
 	buf.WriteString("  " + testcalls.Testname + "\n")
 	for _, call := range testcalls.FuncCalls {
-		buf.WriteString(fmt.Sprintf("    %s()\n", call.Fun))
+		buf.WriteString(fmt.Sprintf("    %s()\n", call))
 	}
 	return buf.String()
 }

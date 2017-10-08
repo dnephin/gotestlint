@@ -49,6 +49,11 @@ func (fc Function) ExpectedTestPrefix() string {
 	return fmt.Sprintf("Test%s%s", strings.Title(fc.Receiver), strings.Title(fc.Name))
 }
 
+// Equal returns true if the other Function matches
+func (fc Function) Equal(other Function) bool {
+	return fc.Name == other.Name && fc.Receiver == other.Receiver
+}
+
 // ParseDirectory returns a list of TestCases found in the test files in
 // a directory
 func ParseDirectory(path string) (*Directory, error) {

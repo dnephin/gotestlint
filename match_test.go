@@ -7,17 +7,19 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestCheckNameNoError(t *testing.T) {
+func TestFindFunctionForTestCaseNoError(t *testing.T) {
 	testcase := TestCase{
 		Testname: "TestFooBarWithSomething",
 		FuncCalls: []Function{
 			{Name: "fooBar"},
 		},
 	}
-	assert.NoError(t, CheckName(testcase))
+	function, err := FindFunctionForTestCase(testcase)
+	require.NoError(t, err)
+	assert.Equal(t, Function{Name: "fooBar"}, function)
 }
 
-func TestCheckNameNoMatch(t *testing.T) {
+func TestFindFunctionForTestCaseNoMatch(t *testing.T) {
 	testcase := TestCase{
 		Testname: "TestFooBarWithSomething",
 		FuncCalls: []Function{
@@ -25,7 +27,7 @@ func TestCheckNameNoMatch(t *testing.T) {
 			{Name: "blah", Receiver: "Doer"},
 		},
 	}
-	err := CheckName(testcase)
+	_, err := FindFunctionForTestCase(testcase)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "expected prefix: TestSomething, TestDoerBlah")
 }
