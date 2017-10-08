@@ -10,7 +10,7 @@ import (
 func TestCheckNameNoError(t *testing.T) {
 	testcase := TestCase{
 		Testname: "TestFooBarWithSomething",
-		FuncCalls: []FuncCall{
+		FuncCalls: []Function{
 			{Name: "fooBar"},
 		},
 	}
@@ -20,7 +20,7 @@ func TestCheckNameNoError(t *testing.T) {
 func TestCheckNameNoMatch(t *testing.T) {
 	testcase := TestCase{
 		Testname: "TestFooBarWithSomething",
-		FuncCalls: []FuncCall{
+		FuncCalls: []Function{
 			{Name: "something"},
 			{Name: "blah", Receiver: "Doer"},
 		},

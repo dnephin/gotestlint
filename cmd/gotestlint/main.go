@@ -32,7 +32,7 @@ func parseOptions() (options, error) {
 }
 
 func run(opts options) error {
-	calls, err := gotestlint.TestCasesFromDir(opts.path)
+	calls, err := gotestlint.ParseDirectory(opts.path)
 	if err != nil {
 		return err
 	}
